@@ -1,0 +1,146 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidUserProfile(data) {
+      return isValidString(data.userId, 1, 128) &&
+             data.userId == request.auth.uid &&
+             isValidString(data.displayName, 1, 100) &&
+             (!('email' in data) || data.email == null || isValidString(data.email, 0, 200)) &&
+             data.displayLanguage in ['BILINGUAL', 'TAMIL', 'ENGLISH'] &&
+             data.voiceLanguage in ['TAMIL_IN', 'TANGLISH_EN_IN', 'ENGLISH_US'] &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidSavedKural(data) {
+      return isValidString(data.userId, 1, 128) &&
+             data.userId == request.auth.uid &&
+             isValidString(data.query, 1, 500) &&
+             isValidString(data.detectedSummaryEn, 1, 600) &&
+             isValidString(data.detectedSummaryTa, 1, 800) &&
+             data.kuralNumber is int && data.kuralNumber >= 1 && data.kuralNumber <= 1330 &&
+             isValidString(data.kuralLine1Ta, 1, 200) &&
+             isValidString(data.kuralLine2Ta, 1, 200) &&
+             data.athikaramNumber is int && data.athikaramNumber >= 1 && data.athikaramNumber <= 133 &&
+             isValidString(data.athikaramTa, 1, 150) &&
+             isValidString(data.athikaramEn, 1, 150) &&
+             isValidString(data.transliteration, 1, 300) &&
+             isValidString(data.meaningTa, 1, 1000) &&
+             isValidString(data.meaningEn, 1, 1000) &&
+             isValidString(data.practicalSolutionTa, 1, 1500) &&
+             isValidString(data.practicalSolutionEn, 1, 1500) &&
+             isValidString(data.actionableStepTa, 1, 600) &&
+             isValidString(data.actionableStepEn, 1, 600) &&
+             isValidString(data.topicTag, 1, 60) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    match /users/{userId} {
+      // Strictly owner-private PII and preferences
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'displayLanguage',
+                         'voiceLanguage', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'email', 'displayLanguage',
+                         'voiceLanguage', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'email', 'displayLanguage', 'voiceLanguage', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /savedKurals/{kuralDocId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(kuralDocId);
+        allow list: if isOwner(userId) && isValidId(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(kuralDocId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'query', 'detectedSummaryEn', 'detectedSummaryTa',
+                           'kuralNumber', 'kuralLine1Ta', 'kuralLine2Ta',
+                           'athikaramNumber', 'athikaramTa', 'athikaramEn',
+                           'transliteration', 'meaningTa', 'meaningEn',
+                           'practicalSolutionTa', 'practicalSolutionEn',
+                           'actionableStepTa', 'actionableStepEn', 'topicTag',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'query', 'detectedSummaryEn', 'detectedSummaryTa',
+                           'kuralNumber', 'kuralLine1Ta', 'kuralLine2Ta',
+                           'athikaramNumber', 'athikaramTa', 'athikaramEn',
+                           'transliteration', 'meaningTa', 'meaningEn',
+                           'practicalSolutionTa', 'practicalSolutionEn',
+                           'actionableStepTa', 'actionableStepEn', 'topicTag',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidSavedKural(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(kuralDocId) &&
+                         isValidSavedKural(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().kuralNumber == existing().kuralNumber &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'query', 'detectedSummaryEn', 'detectedSummaryTa',
+                           'practicalSolutionTa', 'practicalSolutionEn',
+                           'actionableStepTa', 'actionableStepEn', 'topicTag',
+                           'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(kuralDocId);
+      }
+    }
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Authenticated user profile and language preferences for Thirukkural Life Guide.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name shown on Profile screen."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Optional email address from Google Sign-In, strictly owner-private."
+        },
+        "displayLanguage": {
+          "type": "string",
+          "enum": ["BILINGUAL", "TAMIL", "ENGLISH"],
+          "description": "Preferred display language for Thirukkural explanations."
+        },
+        "voiceLanguage": {
+          "type": "string",
+          "enum": ["TAMIL_IN", "TANGLISH_EN_IN", "ENGLISH_US"],
+          "description": "Preferred speech recognition locale for voice input."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on creation and update."
+        }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "displayLanguage",
+        "voiceLanguage",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SavedKural": {
+      "title": "Saved Kural Guidance",
+      "description": "A bookmarked Thirukkural couplet and personalized modern life solution.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner."
+        },
+        "query": {
+          "type": "string",
+          "description": "Original life problem spoken or typed by the user."
+        },
+        "detectedSummaryEn": {
+          "type": "string",
+          "description": "Empathetic English summary of the detected problem."
+        },
+        "detectedSummaryTa": {
+          "type": "string",
+          "description": "Empathetic Tamil summary of the detected problem."
+        },
+        "kuralNumber": {
+          "type": "integer",
+          "description": "Thirukkural couplet number from 1 to 1330."
+        },
+        "kuralLine1Ta": {
+          "type": "string",
+          "description": "First line of the Tamil Thirukkural couplet (4 words)."
+        },
+        "kuralLine2Ta": {
+          "type": "string",
+          "description": "Second line of the Tamil Thirukkural couplet (3 words)."
+        },
+        "athikaramNumber": {
+          "type": "integer",
+          "description": "Chapter number from 1 to 133."
+        },
+        "athikaramTa": {
+          "type": "string",
+          "description": "Athikaram (Chapter) name in Tamil."
+        },
+        "athikaramEn": {
+          "type": "string",
+          "description": "Athikaram (Chapter) name in English."
+        },
+        "transliteration": {
+          "type": "string",
+          "description": "Phonetic English transliteration of the couplet."
+        },
+        "meaningTa": {
+          "type": "string",
+          "description": "Clear Tamil explanation of the couplet."
+        },
+        "meaningEn": {
+          "type": "string",
+          "description": "Clear English explanation of the couplet."
+        },
+        "practicalSolutionTa": {
+          "type": "string",
+          "description": "Practical modern application in Tamil tailored to the user's situation."
+        },
+        "practicalSolutionEn": {
+          "type": "string",
+          "description": "Practical modern application in English tailored to the user's situation."
+        },
+        "actionableStepTa": {
+          "type": "string",
+          "description": "One concrete immediate action step in Tamil."
+        },
+        "actionableStepEn": {
+          "type": "string",
+          "description": "One concrete immediate action step in English."
+        },
+        "topicTag": {
+          "type": "string",
+          "description": "Short category label such as Stress, Anger, Career, Relationships."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() when bookmarked."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on bookmark update."
+        }
+      },
+      "required": [
+        "userId",
+        "query",
+        "detectedSummaryEn",
+        "detectedSummaryTa",
+        "kuralNumber",
+        "kuralLine1Ta",
+        "kuralLine2Ta",
+        "athikaramNumber",
+        "athikaramTa",
+        "athikaramEn",
+        "transliteration",
+        "meaningTa",
+        "meaningEn",
+        "practicalSolutionTa",
+        "practicalSolutionEn",
+        "actionableStepTa",
+        "actionableStepEn",
+        "topicTag",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Owner-private user profile and language preferences."
+    },
+    "/users/{userId}/savedKurals/{kuralDocId}": {
+      "schema": {
+        "$ref": "#/entities/SavedKural"
+      },
+      "description": "User-owned bookmarked Thirukkural couplets and modern guidance cards."
+    }
+  }
+}

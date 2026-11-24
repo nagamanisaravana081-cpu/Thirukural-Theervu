@@ -1,0 +1,6 @@
+{
+  "name": "Thirukkural Life Guide",
+  "description": "Voice-first life guidance companion matching everyday problems in Tamil, English, or Tanglish to authentic Thirukkural couplets with practical modern solutions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
