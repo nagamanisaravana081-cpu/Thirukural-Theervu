@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,7 +57,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -385,6 +393,7 @@ fun HomeDashboardScreen(
                     title = if (displayLanguage == DisplayLanguage.TAMIL) "அங்காடி" else "Shop",
                     subtitle = "விரைவில்…",
                     onClick = onOpenShop,
+                    animatedShopIcon = true,
                     modifier = Modifier
                         .weight(1f)
                         .testTag("home_shortcut_shop")
@@ -520,13 +529,50 @@ private fun HomeQuickTile(
     title: String,
     subtitle: String,
     onClick: () -> Unit,
+    animatedShopIcon: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val infinite = rememberInfiniteTransition(label = "quickTileAnim")
+    val iconOffsetY by infinite.animateFloat(
+        initialValue = -2.5f,
+        targetValue = 2.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shopTileFloat"
+    )
+    val iconRotation by infinite.animateFloat(
+        initialValue = -7f,
+        targetValue = 7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shopTileSway"
+    )
+    val dotPulse by infinite.animateFloat(
+        initialValue = 0.7f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 950, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shopDotPulse"
+    )
+
     Card(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (animatedShopIcon) {
+                MaterialTheme.colorScheme.secondary.copy(alpha = 0.55f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            }
+        )
     ) {
         Row(
             modifier = Modifier
@@ -535,17 +581,44 @@ private fun HomeQuickTile(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(20.dp)
+            Box(modifier = Modifier.size(42.dp), contentAlignment = Alignment.Center) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .then(
+                                    if (animatedShopIcon) {
+                                        Modifier.graphicsLayer {
+                                            translationY = iconOffsetY
+                                            rotationZ = iconRotation
+                                        }
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                        )
+                    }
+                }
+
+                if (animatedShopIcon) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(9.dp)
+                            .graphicsLayer {
+                                scaleX = dotPulse
+                                scaleY = dotPulse
+                            }
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
                     )
                 }
             }
@@ -560,7 +633,11 @@ private fun HomeQuickTile(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (animatedShopIcon) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

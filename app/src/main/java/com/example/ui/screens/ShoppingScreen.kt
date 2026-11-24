@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,9 +35,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -138,22 +147,82 @@ fun ShoppingScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                border = BorderStroke(
-                                    width = 1.5.dp,
-                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                            val infinite = rememberInfiniteTransition(label = "shopHeroAnim")
+                            val haloScale by infinite.animateFloat(
+                                initialValue = 1.0f,
+                                targetValue = 1.24f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
                                 ),
-                                modifier = Modifier.size(88.dp)
+                                label = "shopHaloScale"
+                            )
+                            val haloAlpha by infinite.animateFloat(
+                                initialValue = 0.28f,
+                                targetValue = 0.05f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "shopHaloAlpha"
+                            )
+                            val bagFloatY by infinite.animateFloat(
+                                initialValue = -5f,
+                                targetValue = 5f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(durationMillis = 1400, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "shopBagFloat"
+                            )
+                            val bagSway by infinite.animateFloat(
+                                initialValue = -5f,
+                                targetValue = 5f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(durationMillis = 1750, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "shopBagSway"
+                            )
+
+                            Box(
+                                modifier = Modifier.size(112.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Filled.ShoppingBag,
-                                        contentDescription = stringResource(R.string.nav_shop),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(40.dp)
-                                    )
+                                Box(
+                                    modifier = Modifier
+                                        .size(92.dp)
+                                        .graphicsLayer {
+                                            scaleX = haloScale
+                                            scaleY = haloScale
+                                            alpha = haloAlpha
+                                        }
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.secondary)
+                                )
+
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    border = BorderStroke(
+                                        width = 1.5.dp,
+                                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.65f)
+                                    ),
+                                    modifier = Modifier.size(88.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Filled.ShoppingBag,
+                                            contentDescription = stringResource(R.string.nav_shop),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .graphicsLayer {
+                                                    translationY = bagFloatY
+                                                    rotationZ = bagSway
+                                                }
+                                        )
+                                    }
                                 }
                             }
 

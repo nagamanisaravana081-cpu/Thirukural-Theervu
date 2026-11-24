@@ -6,12 +6,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
@@ -46,7 +57,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -288,9 +302,9 @@ private fun MainWorkspaceShell(
                                     selectedTab = tab
                                 },
                                 icon = {
-                                    Icon(
-                                        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                        contentDescription = stringResource(tab.labelRes)
+                                    TabNavIcon(
+                                        tab = tab,
+                                        selected = selected
                                     )
                                 },
                                 label = {
@@ -332,9 +346,9 @@ private fun MainWorkspaceShell(
                                     selectedTab = tab
                                 },
                                 icon = {
-                                    Icon(
-                                        imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                                        contentDescription = stringResource(tab.labelRes)
+                                    TabNavIcon(
+                                        tab = tab,
+                                        selected = selected
                                     )
                                 },
                                 label = { Text(stringResource(tab.labelRes)) },
@@ -480,6 +494,75 @@ private fun MainWorkspaceShell(
             onSelectVoiceLanguage = viewModel::setVoiceLanguage,
             onDismiss = { showSettingsSheet = false },
             onShowMessage = viewModel::showSnackbar
+        )
+    }
+}
+
+@Composable
+private fun TabNavIcon(
+    tab: MainTab,
+    selected: Boolean
+) {
+    val iconVector = if (selected) tab.selectedIcon else tab.unselectedIcon
+    val label = stringResource(tab.labelRes)
+
+    if (tab != MainTab.SHOP) {
+        Icon(
+            imageVector = iconVector,
+            contentDescription = label
+        )
+        return
+    }
+
+    val infinite = rememberInfiniteTransition(label = "shopTabIconAnim")
+    val swayDeg by infinite.animateFloat(
+        initialValue = -7f,
+        targetValue = 7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1350, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shopTabSway"
+    )
+    val liftPx by infinite.animateFloat(
+        initialValue = -2.2f,
+        targetValue = 1.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1050, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shopTabLift"
+    )
+    val dotScale by infinite.animateFloat(
+        initialValue = 0.72f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shopTabDot"
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+        Icon(
+            imageVector = iconVector,
+            contentDescription = label,
+            modifier = Modifier.graphicsLayer {
+                rotationZ = swayDeg
+                translationY = liftPx
+            }
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 3.dp, y = (-2).dp)
+                .size(7.dp)
+                .graphicsLayer {
+                    scaleX = dotScale
+                    scaleY = dotScale
+                }
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.secondary)
         )
     }
 }
