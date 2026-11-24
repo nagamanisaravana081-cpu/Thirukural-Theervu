@@ -10,6 +10,7 @@
     <string name="action_continue_google">Continue with Google</string>
     <string name="action_continue_guest">Continue as Guest</string>
     <string name="auth_guest_note">Guest mode saves your guidance locally on this device. Sign in with Google anytime to sync across devices.</string>
+    <string name="nav_home">Home</string>
     <string name="nav_guide">Guide</string>
     <string name="nav_saved">Saved</string>
     <string name="nav_shop">Shop</string>

@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MicNone
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.ShoppingBag
@@ -60,6 +62,7 @@ import com.example.model.VoiceLanguage
 import com.example.ui.components.SettingsBottomSheet
 import com.example.ui.screens.AuthScreen
 import com.example.ui.screens.GuideHomeScreen
+import com.example.ui.screens.HomeDashboardScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.SavedGuidanceScreen
 import com.example.ui.screens.ShoppingScreen
@@ -77,6 +80,7 @@ private enum class MainTab(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
+    HOME("home", R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home),
     GUIDE("guide_home", R.string.nav_guide, Icons.Filled.Mic, Icons.Outlined.MicNone),
     SAVED("saved_guidance", R.string.nav_saved, Icons.Filled.Bookmark, Icons.Outlined.BookmarkBorder),
     SHOP("shopping", R.string.nav_shop, Icons.Filled.ShoppingBag, Icons.Outlined.ShoppingBag),
@@ -235,7 +239,7 @@ private fun MainWorkspaceShell(
         )
     )
 
-    var selectedTab by rememberSaveable { mutableStateOf(MainTab.GUIDE) }
+    var selectedTab by rememberSaveable { mutableStateOf(MainTab.HOME) }
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -289,7 +293,13 @@ private fun MainWorkspaceShell(
                                         contentDescription = stringResource(tab.labelRes)
                                     )
                                 },
-                                label = { Text(stringResource(tab.labelRes)) },
+                                label = {
+                                    Text(
+                                        text = stringResource(tab.labelRes),
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
                                     selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -340,6 +350,31 @@ private fun MainWorkspaceShell(
                 }
 
                 when (selectedTab) {
+                    MainTab.HOME -> {
+                        HomeDashboardScreen(
+                            displayName = userDisplayName?.takeIf { it.isNotBlank() } ?: guestName,
+                            displayLanguage = displayLanguage,
+                            savedKuralsCount = savedKuralsCount,
+                            recentSearches = recentSearches,
+                            onOpenGuide = {
+                                viewModel.resetToIdle()
+                                selectedTab = MainTab.GUIDE
+                            },
+                            onAskTopic = { prompt ->
+                                selectedTab = MainTab.GUIDE
+                                viewModel.solveProblem(prompt)
+                            },
+                            onOpenRecentSearch = { entry ->
+                                selectedTab = MainTab.GUIDE
+                                viewModel.openRecentSearch(entry)
+                            },
+                            onOpenSaved = { selectedTab = MainTab.SAVED },
+                            onOpenShop = { selectedTab = MainTab.SHOP },
+                            onOpenSettings = { showSettingsSheet = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
                     MainTab.GUIDE -> {
                         GuideHomeScreen(
                             solverState = solverState,
