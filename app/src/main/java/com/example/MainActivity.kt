@@ -82,6 +82,7 @@ import com.example.ui.screens.SavedGuidanceScreen
 import com.example.ui.screens.ShoppingScreen
 import com.example.ui.screens.SplashScreen
 import com.example.ui.theme.ThirukkuralTheme
+import com.example.util.ProfilePhotoManager
 import com.example.viewmodel.KuralGuideViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
@@ -220,11 +221,21 @@ private fun ThirukkuralAppRoot(isDarkMode: Boolean) {
                                 scope = scope,
                                 onSignOutComplete = {
                                     currentUser = null
-                                    scope.launch { localStorage.setGuestMode(false) }
+                                    scope.launch {
+                                        val legacyPath = localStorage.clearLegacyProfilePhotoPath()
+                                        ProfilePhotoManager.deleteProfilePhoto(legacyPath)
+                                        ProfilePhotoManager.deleteLegacyUnscopedPhotos(context)
+                                        localStorage.setGuestMode(false)
+                                    }
                                 }
                             )
                         } else {
-                            scope.launch { localStorage.setGuestMode(false) }
+                            scope.launch {
+                                val legacyPath = localStorage.clearLegacyProfilePhotoPath()
+                                ProfilePhotoManager.deleteProfilePhoto(legacyPath)
+                                ProfilePhotoManager.deleteLegacyUnscopedPhotos(context)
+                                localStorage.setGuestMode(false)
+                            }
                         }
                     }
                 )

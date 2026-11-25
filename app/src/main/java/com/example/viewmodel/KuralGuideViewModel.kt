@@ -91,7 +91,9 @@ class KuralGuideViewModel(
     val isDarkMode: StateFlow<Boolean> = localStorage.isDarkModeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), false)
 
-    val profilePhotoPath: StateFlow<String?> = localStorage.profilePhotoPathFlow
+    private val photoOwnerKey: String = ProfilePhotoManager.ownerKeyForUser(userId)
+
+    val profilePhotoPath: StateFlow<String?> = localStorage.profilePhotoPathFlow(photoOwnerKey)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), null)
 
     val guestDisplayName: StateFlow<String> = localStorage.guestDisplayNameFlow
@@ -404,10 +406,10 @@ class KuralGuideViewModel(
 
     fun updateProfilePhoto(context: Context, uri: Uri) {
         viewModelScope.launch {
-            val result = ProfilePhotoManager.saveProfilePhotoFromUri(context, uri)
+            val result = ProfilePhotoManager.saveProfilePhotoFromUri(context, photoOwnerKey, uri)
             result.fold(
                 onSuccess = { savedPath ->
-                    localStorage.setProfilePhotoPath(savedPath)
+                    localStorage.setProfilePhotoPath(photoOwnerKey, savedPath)
                     _snackbarMessage.value = "Profile photo updated"
                 },
                 onFailure = { err ->
@@ -421,7 +423,7 @@ class KuralGuideViewModel(
         viewModelScope.launch {
             val existing = profilePhotoPath.value
             ProfilePhotoManager.deleteProfilePhoto(existing)
-            localStorage.setProfilePhotoPath(null)
+            localStorage.clearProfilePhotoPath(photoOwnerKey)
             _snackbarMessage.value = "Profile photo removed"
         }
     }

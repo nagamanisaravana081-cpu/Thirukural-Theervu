@@ -43,8 +43,11 @@ class LocalStorageRepository(context: Context) {
         val IS_GUEST_MODE = booleanPreferencesKey("is_guest_mode")
         val GUEST_DISPLAY_NAME = stringPreferencesKey("guest_display_name")
         val DARK_MODE_ENABLED = booleanPreferencesKey("dark_mode_enabled")
-        val PROFILE_PHOTO_PATH = stringPreferencesKey("profile_photo_path")
+        val LEGACY_PROFILE_PHOTO_PATH = stringPreferencesKey("profile_photo_path")
     }
+
+    private fun profilePhotoKeyForOwner(ownerKey: String): Preferences.Key<String> =
+        stringPreferencesKey("profile_photo_path_$ownerKey")
 
     private val safePreferences: Flow<Preferences> = dataStore.data.catch { exception ->
         if (exception is IOException) {
@@ -91,8 +94,8 @@ class LocalStorageRepository(context: Context) {
         value
     }
 
-    val profilePhotoPathFlow: Flow<String?> = safePreferences.map { prefs ->
-        prefs[Keys.PROFILE_PHOTO_PATH]?.takeIf { it.isNotBlank() }
+    fun profilePhotoPathFlow(ownerKey: String): Flow<String?> = safePreferences.map { prefs ->
+        prefs[profilePhotoKeyForOwner(ownerKey)]?.takeIf { it.isNotBlank() }
     }
 
     fun getInitialGuestModeSync(): Boolean =
@@ -191,14 +194,33 @@ class LocalStorageRepository(context: Context) {
         }
     }
 
-    suspend fun setProfilePhotoPath(path: String?) {
+    suspend fun setProfilePhotoPath(ownerKey: String, path: String?) {
+        val scopedKey = profilePhotoKeyForOwner(ownerKey)
         dataStore.edit { prefs ->
             if (path.isNullOrBlank()) {
-                prefs.remove(Keys.PROFILE_PHOTO_PATH)
+                prefs.remove(scopedKey)
             } else {
-                prefs[Keys.PROFILE_PHOTO_PATH] = path
+                prefs[scopedKey] = path
             }
+            prefs.remove(Keys.LEGACY_PROFILE_PHOTO_PATH)
         }
+    }
+
+    suspend fun clearProfilePhotoPath(ownerKey: String) {
+        val scopedKey = profilePhotoKeyForOwner(ownerKey)
+        dataStore.edit { prefs ->
+            prefs.remove(scopedKey)
+            prefs.remove(Keys.LEGACY_PROFILE_PHOTO_PATH)
+        }
+    }
+
+    suspend fun clearLegacyProfilePhotoPath(): String? {
+        var legacyPath: String? = null
+        dataStore.edit { prefs ->
+            legacyPath = prefs[Keys.LEGACY_PROFILE_PHOTO_PATH]
+            prefs.remove(Keys.LEGACY_PROFILE_PHOTO_PATH)
+        }
+        return legacyPath
     }
 
     private fun parseRecentSearches(rawJson: String?): List<RecentSearchEntry> {

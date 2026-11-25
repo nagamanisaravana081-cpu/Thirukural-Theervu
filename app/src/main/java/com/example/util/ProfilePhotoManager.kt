@@ -12,8 +12,20 @@ import java.io.FileOutputStream
 object ProfilePhotoManager {
 
     private const val AVATAR_SIZE_PX = 512
+    private const val AVATAR_PREFIX = "profile_avatar_"
 
-    suspend fun saveProfilePhotoFromUri(context: Context, sourceUri: Uri): Result<String> {
+    fun ownerKeyForUser(userId: String?): String {
+        val trimmed = userId?.trim().orEmpty()
+        if (trimmed.isBlank()) return "guest"
+        val safeUid = trimmed.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+        return "user_$safeUid"
+    }
+
+    suspend fun saveProfilePhotoFromUri(
+        context: Context,
+        ownerKey: String,
+        sourceUri: Uri
+    ): Result<String> {
         return withContext(Dispatchers.IO) {
             try {
                 val decoded = context.contentResolver.openInputStream(sourceUri)?.use { input ->
@@ -23,10 +35,14 @@ object ProfilePhotoManager {
                 val cropped = centerCropSquare(decoded)
                 val scaled = Bitmap.createScaledBitmap(cropped, AVATAR_SIZE_PX, AVATAR_SIZE_PX, true)
 
-                val outFile = File(context.filesDir, "profile_avatar_${System.currentTimeMillis()}.jpg")
-                // Clean up older avatar files to avoid bloat
+                val scopedPrefix = "${AVATAR_PREFIX}${ownerKey}_"
+                val outFile = File(context.filesDir, "${scopedPrefix}${System.currentTimeMillis()}.jpg")
+                // Clean up older avatar files belonging only to this owner (plus any legacy unscoped files)
                 context.filesDir.listFiles { file ->
-                    file.name.startsWith("profile_avatar_") && file.name.endsWith(".jpg")
+                    file.name.endsWith(".jpg") && (
+                        file.name.startsWith(scopedPrefix) ||
+                            isLegacyUnscopedAvatarFile(file.name)
+                        )
                 }?.forEach { old -> old.delete() }
 
                 FileOutputStream(outFile).use { fos ->
@@ -55,6 +71,24 @@ object ProfilePhotoManager {
             } catch (_: Exception) {
             }
         }
+    }
+
+    suspend fun deleteLegacyUnscopedPhotos(context: Context) {
+        withContext(Dispatchers.IO) {
+            try {
+                context.filesDir.listFiles { file ->
+                    isLegacyUnscopedAvatarFile(file.name)
+                }?.forEach { old -> old.delete() }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun isLegacyUnscopedAvatarFile(fileName: String): Boolean {
+        return fileName.startsWith(AVATAR_PREFIX) &&
+            fileName.endsWith(".jpg") &&
+            !fileName.startsWith("${AVATAR_PREFIX}user_") &&
+            !fileName.startsWith("${AVATAR_PREFIX}guest_")
     }
 
     fun loadBitmap(path: String?): Bitmap? {
